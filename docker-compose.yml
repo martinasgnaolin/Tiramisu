@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14.5-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+
+  backend:
+    container_name: backend
+    build: backend/
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+    links:
+      - db
+
+  frontend:
+    container_name: frontend
+    build: frontend/
+    depends_on:
+      - backend
+    ports:
+      - 5000:5000
+    links:
+      - backend
