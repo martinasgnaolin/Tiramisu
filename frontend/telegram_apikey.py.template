@@ -1,0 +1,3 @@
+# Fill in the api key and rename this file to telegram_apikey.py
+
+API_KEY = '<insert your api key here>'
