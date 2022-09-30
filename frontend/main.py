@@ -1,6 +1,6 @@
 from telegram.ext import *
 
-API_KEY = '5745630007:AAGOStGrqivsJj-EO-lkt-M3ATf7QMmW450'
+from telegram_apikey import API_KEY
 
 print("Bot started...")
 
