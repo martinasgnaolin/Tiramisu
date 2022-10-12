@@ -68,8 +68,11 @@ async def github_auth_get_token(request):
             github_auth_loop(device_code, interval),
             timeout = expires_in
         )
-    except TimeoutError:
-        logging.info(f'Github authorization timed out')
+    except asyncio.TimeoutError:
+        logging.info(f'GH auth, timed out')
+        return
+    except Exception as e:
+        logging.warn(f'GH auth, got exception {e}')
 
     logging.info(f'GH auth success, access token {access_token}')
 
