@@ -25,6 +25,7 @@ def app_shutdown():
     app.state.db.close()
     logging.info(f'Database connection shut down')
 
+
 @app.post('/user/connect')
 def api_user_connect():
     return {'no':'no'}
@@ -47,4 +48,9 @@ def api_subscription_list():
 
 @app.delete('/subscription/{id}')
 def api_subscription_id(id: int):
+    return {'no':'no'}
+
+
+@app.post('/github_callback')
+def github_callback():
     return {'no':'no'}
