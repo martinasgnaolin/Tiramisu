@@ -1,48 +1,26 @@
 import os
 import sys
 from fastapi import FastAPI
-import psycopg
 import logging
 import time
+import db
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_NAME = os.getenv('DB_NAME')
-DB_CONNECTION_ATTEMPTS = 5
-DB_CONNECTION_DELAY = 5
 
 app = FastAPI()
 
 @app.on_event('startup')
 def app_startup():
-    conn_string = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-
-    for i in range(DB_CONNECTION_ATTEMPTS):
-        try:
-            app.state.db = psycopg.connect(conn_string)
-            break
-        except psycopg.OperationalError:
-            logging.info(f'Database connection failed ({i+1}/{DB_CONNECTION_ATTEMPTS}).')
-            if i < DB_CONNECTION_ATTEMPTS - 1:
-                logging.info(f'Retrying in {DB_CONNECTION_DELAY}s.')
-                time.sleep(DB_CONNECTION_DELAY)
-    else:
-        raise RuntimeError(f'Database connection failed for {DB_CONNECTION_ATTEMPTS} attempts. Shutting down')
-
-    logging.info(f'Database connected {app.state.db}')
-
-@app.on_event('shutdown')
-def app_shutdown():
-    app.state.db.close()
-    logging.info(f'Database connection shut down')
+    db.init()
 
 
 @app.post('/user/connect')
 def api_user_connect():
+    with db.session() as session:
+        user = db.User(telegram_id='asd', notifications_enabled=False)
+        session.add(user)
+        session.commit()
+
     return {'no':'no'}
 
 @app.get('/notifications/enable')
