@@ -1,7 +1,10 @@
 import os
+import sys
 from fastapi import FastAPI
 import psycopg
 import logging
+
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
@@ -13,8 +16,6 @@ app = FastAPI()
 
 @app.on_event('startup')
 def app_startup():
-    logging.getLogger().setLevel(logging.INFO)
-
     conn_string = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     app.state.db = psycopg.connect(conn_string)
     logging.info(f'Database connected {app.state.db}')
