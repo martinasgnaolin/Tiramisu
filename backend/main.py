@@ -1,8 +1,7 @@
-import os
 import sys
-from fastapi import FastAPI
 import logging
-import time
+from fastapi import FastAPI
+
 import db
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)

@@ -25,7 +25,7 @@ class User(Base):
     notifications_enabled = Column(Boolean, nullable=False, default=True)
 
     def __repr__(self):
-        return f'User(id={self.id}, telegram_id={self.telegram_id}, notifications_enabled={self.notifications_enabled}'
+        return f'User(id={self.id}, telegram_id={self.telegram_id}, notifications_enabled={self.notifications_enabled})'
 
 
 def init():
