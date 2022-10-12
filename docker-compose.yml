@@ -1,6 +1,7 @@
 version: '3.8'
 services:
   db:
+    container_name: db
     image: postgres:14.5-alpine
     restart: always
     environment:
@@ -22,8 +23,6 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: postgres
-    links:
-      - db
 
   frontend:
     container_name: frontend
@@ -32,5 +31,3 @@ services:
       - backend
     ports:
       - 5000:5000
-    links:
-      - backend
