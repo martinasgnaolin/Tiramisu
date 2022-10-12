@@ -1,0 +1,4 @@
+# Fill in the api key and rename this file to github_apikey.py
+
+CLIENT_ID = '<insert client ID here>'
+CLIENT_SECRET = '<insert client secret here>'
