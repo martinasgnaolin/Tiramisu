@@ -59,7 +59,7 @@ def help_command(update, context):
     )
 
 #---------------------------------
-# Login and logout 
+# Login and logout
 #---------------------------------
 
 def login_command(update, context):
@@ -107,7 +107,8 @@ def subscriptions_command(update, context):
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
 
-def main():
+@app.on_event('startup')
+def init_telegram_bot():
     updater = Updater(API_KEY, use_context=True)
     dp = updater.dispatcher
 
@@ -122,6 +123,3 @@ def main():
     dp.add_handler(CommandHandler("subscriptions", subscriptions_command))
 
     updater.start_polling(1)
-    updater.idle()
-
-main()
