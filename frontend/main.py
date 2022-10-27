@@ -18,11 +18,6 @@ class Notification(BaseModel):
 
 app = FastAPI()
 
-# Just to test if connection is working, to be removed
-@app.get('/test')
-def api_test():
-    return {"message": "Hello World"}
-
 @app.post('/notification')
 async def api_notification(notification: Notification):
     updater = Updater(API_KEY)
