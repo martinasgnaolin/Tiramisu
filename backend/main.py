@@ -10,6 +10,9 @@ import github_apikey
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
+STATUS_OK = 'success'
+STATUS_ALREADY_LOGGED_IN = 'already_logged_in'
+STATUS_AUTH_FAILED = 'authentication_failed'
 
 def github_auth_begin():
     res = requests.post(
@@ -104,13 +107,13 @@ async def api_user_connect(req: ConnectRequest):
     with db.session() as session:
         users = session.query(db.User).filter_by(telegram_id = req.tg_chat_id).all()
         if len(users) > 0:
-            return {'status': 'already_logged_in'}
+            return {'status': STATUS_ALREADY_LOGGED_IN}
 
     gh_request = github_auth_begin()
     asyncio.create_task(github_auth_get_token(req.tg_chat_id, gh_request))
 
     return {
-        'status': 'login_pending',
+        'status': STATUS_OK,
         'verification_uri': gh_request['verification_uri'],
         'user_code': gh_request['user_code']
     }
