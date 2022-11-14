@@ -100,10 +100,17 @@ class ConnectRequest(BaseModel):
 
 @app.post('/user/connect')
 async def api_user_connect(req: ConnectRequest):
+
+    with db.session() as session:
+        users = session.query(db.User).filter_by(telegram_id = req.tg_chat_id).all()
+        if len(users) > 0:
+            return {'status': 'already_logged_in'}
+
     gh_request = github_auth_begin()
     asyncio.create_task(github_auth_get_token(req.tg_chat_id, gh_request))
 
     return {
+        'status': 'login_pending',
         'verification_uri': gh_request['verification_uri'],
         'user_code': gh_request['user_code']
     }

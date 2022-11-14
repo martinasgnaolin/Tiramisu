@@ -21,7 +21,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_id = Column(String, nullable=False)
+    telegram_id = Column(String, nullable=False, unique=True)
     github_access_token = Column(String)
     notifications_enabled = Column(Boolean, nullable=False, default=True)
 
