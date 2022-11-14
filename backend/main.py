@@ -122,12 +122,11 @@ def app_startup():
     db.init()
 
 
-class ConnectRequest(BaseModel):
+class ApiRequest(BaseModel):
     tg_chat_id: str
 
-class RemoveRequest(BaseModel):
-    tg_chat_id: str
-
+class ConnectRequest(ApiRequest): pass
+class RemoveRequest(ApiRequest): pass
 
 @app.post('/user/connect')
 async def api_user_connect(req: ConnectRequest):
