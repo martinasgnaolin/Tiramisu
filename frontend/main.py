@@ -73,9 +73,10 @@ def login_command(update, context):
 
     if res['status'] == 'success':
         uri = res['verification_uri']
-        code = res['user_code']
+        code = "`" + res['user_code'] + "`"
         update.message.reply_text("Follow the link " + uri 
-                                  + " and insert the following code (tap to copy): " + code)
+                                  + " and insert the following code (tap to copy): "
+                                  + code, parse_mode="Markdown")
     
     if res['status'] == 'already_logged_in':
         update.message.reply_text("You are already logged in")
@@ -125,7 +126,7 @@ def disable_command(update, context):
 
 def subscribe_command(update, context):
     update.message.reply_text("Which subscription do you want to add?")
-
+    
 def unsubscribe_command(update, context):
     update.message.reply_text("Which subscription do you want to remove?")
 
