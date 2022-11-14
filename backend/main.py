@@ -104,12 +104,18 @@ async def github_auth_get_token(tg_chat_id, request):
         return
 
     with db.session() as session:
-        user = db.User(
-            telegram_id = tg_chat_id,
-            github_access_token = access_token,
-            notifications_enabled = True
-        )
-        session.add(user)
+        user = session.query(db.User).filter_by(telegram_id = tg_chat_id).first()
+
+        if user:
+            user.github_access_token = access_token
+        else:
+            user = db.User(
+                telegram_id = tg_chat_id,
+                github_access_token = access_token,
+                notifications_enabled = True
+            )
+            session.add(user)
+
         session.commit()
 
     logging.info(f'GH auth success, chat id {tg_chat_id}, access token {access_token}')
@@ -130,11 +136,8 @@ class RemoveRequest(ApiRequest): pass
 
 @app.post('/user/connect')
 async def api_user_connect(req: ConnectRequest):
-
-    with db.session() as session:
-        users = session.query(db.User).filter_by(telegram_id = req.tg_chat_id).all()
-        if len(users) > 0:
-            return {'status': STATUS_ALREADY_LOGGED_IN}
+    if get_authenticated_user(req.tg_chat_id):
+        return {'status': STATUS_ALREADY_LOGGED_IN}
 
     gh_request = github_auth_begin()
     asyncio.create_task(github_auth_get_token(req.tg_chat_id, gh_request))
@@ -151,7 +154,7 @@ def api_user_remove(req: RemoveRequest):
         return {'status': STATUS_AUTH_FAILED}
 
     with db.session() as session:
-        session.query(db.User).filter_by(id = user.id).github_access_token = None
+        session.query(db.User).filter_by(id = user.id).first().github_access_token = None
         session.commit()
 
     return {'status': STATUS_OK}
