@@ -155,8 +155,10 @@ class ApiRequest(BaseModel):
     tg_chat_id: str
 
 class ConnectRequest(ApiRequest): pass
-
 class RemoveRequest(ApiRequest): pass
+
+class NotificationEnableRequest(ApiRequest): pass
+class NotificationDisableRequest(ApiRequest): pass
 
 class SubscriptionAddRequest(ApiRequest):
     owner: str
@@ -196,12 +198,26 @@ def api_user_remove(req: RemoveRequest):
 
 
 @app.get('/notifications/enable')
-def api_notifications_enable():
-    return {'no':'no'}
+def api_notifications_enable(req: NotificationEnableRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
+
+    with db.session() as session:
+        session.query(db.User).filter_by(id = user.id).first().notifications_enabled = True
+        session.commit()
+
+    return {'status': STATUS_OK}
 
 @app.get('/notifications/disable')
-def api_notifications_enable():
-    return {'no':'no'}
+def api_notifications_enable(req: NotificationDisableRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
+
+    with db.session() as session:
+        session.query(db.User).filter_by(id = user.id).first().notifications_enabled = False
+        session.commit()
+
+    return {'status': STATUS_OK}
 
 
 @app.post('/subscription')
