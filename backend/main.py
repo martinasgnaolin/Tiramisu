@@ -28,6 +28,13 @@ def send_notification(chat_id: str, message: str):
         }
     )
 
+def get_authenticated_user(tg_chat_id):
+    with db.session() as session:
+        user = session.query(db.User).filter_by(telegram_id = tg_chat_id).first()
+        if user is None or user.github_access_token is None:
+            return None
+        return user
+
 
 def github_auth_begin():
     res = requests.post(
@@ -118,6 +125,9 @@ def app_startup():
 class ConnectRequest(BaseModel):
     tg_chat_id: str
 
+class RemoveRequest(BaseModel):
+    tg_chat_id: str
+
 
 @app.post('/user/connect')
 async def api_user_connect(req: ConnectRequest):
@@ -135,6 +145,18 @@ async def api_user_connect(req: ConnectRequest):
         'verification_uri': gh_request['verification_uri'],
         'user_code': gh_request['user_code']
     }
+
+@app.post('/user/remove')
+def api_user_remove(req: RemoveRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
+
+    with db.session() as session:
+        session.query(db.User).filter_by(id = user.id).github_access_token = None
+        session.commit()
+
+    return {'status': STATUS_OK}
+
 
 @app.get('/notifications/enable')
 def api_notifications_enable():
