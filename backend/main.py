@@ -136,7 +136,7 @@ def add_github_webhook(gh_token: str, owner: str, repo: str):
             'active': True,
             'events': ['push'],
             'config': {
-                'url': 'http://tiramisu.cf/github_callback',
+                'url': 'http://tiramisu.cf:8000/github_callback',
                 'content_type': 'json',
                 'insecure_ssl': 1
             }
