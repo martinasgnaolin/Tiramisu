@@ -4,6 +4,7 @@ import logging
 import requests
 from fastapi import FastAPI
 from pydantic import BaseModel
+from sqlalchemy.sql.expression import func
 
 import db
 import github_apikey
@@ -132,7 +133,19 @@ class ApiRequest(BaseModel):
     tg_chat_id: str
 
 class ConnectRequest(ApiRequest): pass
+
 class RemoveRequest(ApiRequest): pass
+
+class SubscriptionAddRequest(ApiRequest):
+    owner: str
+    repo: str
+    pattern: str
+
+class SubscriptionListRequest(ApiRequest): pass
+
+class SubscriptionDeleteRequest(ApiRequest):
+    sub_id: str
+
 
 @app.post('/user/connect')
 async def api_user_connect(req: ConnectRequest):
@@ -168,17 +181,65 @@ def api_notifications_enable():
 def api_notifications_enable():
     return {'no':'no'}
 
-@app.post('/subscription/add')
-def api_subscription():
-    return {'no':'no'}
 
-@app.get('/subscription/list')
-def api_subscription_list():
-    return {'no':'no'}
+@app.post('/subscription')
+def api_subscription(req: SubscriptionAddRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
 
-@app.delete('/subscription/{id}')
-def api_subscription_id(id: int):
-    return {'no':'no'}
+    with db.session() as session:
+        last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()
+        if not last_sub_id:
+            last_sub_id = 0
+
+        sub = db.Subscription(
+            id = last_sub_id + 1,
+            user_id = user.id,
+            owner = req.owner,
+            repo = req.repo,
+            pattern = req.pattern
+        )
+
+        session.add(sub)
+        session.commit()
+
+    return {'status': STATUS_OK}
+
+@app.post('/subscription/list')
+def api_subscription_list(req: SubscriptionListRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
+
+    with db.session() as session:
+        subs = session.query(db.Subscription).filter_by(user_id = user.id).order_by(db.Subscription.id).all()
+
+    res = []
+    for sub in subs:
+        res.append({
+            'id': sub.id,
+            'owner': sub.owner,
+            'repo': sub.repo,
+            'pattern': sub.pattern
+        })
+
+    return {
+        'status': STATUS_OK,
+        'result': res
+    }
+
+@app.post('/subscription/delete')
+def api_subscription_delete(req: SubscriptionDeleteRequest):
+    if not (user := get_authenticated_user(req.tg_chat_id)):
+        return {'status': STATUS_AUTH_FAILED}
+
+    with db.session() as session:
+        sub = session.query(db.Subscription).filter_by(user_id = user.id, id = req.sub_id).first()
+        if sub:
+            sub.delete()
+
+        session.commit()
+
+    return {'status': STATUS_OK}
 
 
 @app.post('/github_callback')
