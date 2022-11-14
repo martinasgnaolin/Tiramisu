@@ -58,7 +58,26 @@ def help_command(update, context):
 #---------------------------------
 
 def login_command(update, context):
-    update.message.reply_text("Login with your GitHub account (TODO)")
+
+    res = requests.post(
+        'http://backend:8000/user/connect',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id
+        }
+    ).json()
+
+    if res['status'] == 'success':
+        uri = res['verification_uri']
+        code = res['user_code']
+        update.message.reply_text("Follow the link " + uri + " and insert the following code: " + code)
+    
+    if res['status'] == 'already_logged_in':
+        update.message.reply_text("You are already logged in")
+
 
 def logout_command(update, context):
     update.message.reply_text("Logout from your GitHub account (TODO)")
