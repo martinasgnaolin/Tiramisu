@@ -122,6 +122,28 @@ async def github_auth_get_token(tg_chat_id, request):
     logging.info(f'GH auth success, chat id {tg_chat_id}, access token {access_token}')
     send_notification(tg_chat_id, 'Logged in successfully.')
 
+
+def add_github_webhook(gh_token: str, owner: str, repo: str):
+    requests.post(
+        f'https://api.github.com/repos/{owner}/{repo}/hooks',
+        headers = {
+            'Authorization': f'Bearer {gh_token}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'name': 'Tiramisu',
+            'active': True,
+            'events': ['push'],
+            'config': {
+                'url': 'http://tiramisu.cf/github_callback',
+                'content_type': 'json',
+                'insecure_ssl': 1
+            }
+        }
+    )
+
+
 app = FastAPI()
 
 @app.on_event('startup')
@@ -186,6 +208,8 @@ def api_notifications_enable():
 def api_subscription(req: SubscriptionAddRequest):
     if not (user := get_authenticated_user(req.tg_chat_id)):
         return {'status': STATUS_AUTH_FAILED}
+
+    add_github_webhook(req.tg_chat_id, req.owner, req.repo)
 
     with db.session() as session:
         last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()
