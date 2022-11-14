@@ -14,6 +14,21 @@ STATUS_OK = 'success'
 STATUS_ALREADY_LOGGED_IN = 'already_logged_in'
 STATUS_AUTH_FAILED = 'authentication_failed'
 
+
+def send_notification(chat_id: str, message: str):
+    requests.post(
+        'http://frontend:5000/notification',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'chat_id': chat_id,
+            'message': message
+        }
+    )
+
+
 def github_auth_begin():
     res = requests.post(
         'https://github.com/login/device/code',
@@ -74,12 +89,12 @@ async def github_auth_get_token(tg_chat_id, request):
         )
     except asyncio.TimeoutError:
         logging.info(f'GH auth, timed out')
+        send_notification(tg_chat_id, 'Login timed out. Please try again.')
         return
     except Exception as e:
         logging.warn(f'GH auth, got exception {e}')
+        send_notification(tg_chat_id, 'Login failed. Please try again.')
         return
-
-    logging.info(f'GH auth success, chat id {tg_chat_id}, access token {access_token}')
 
     with db.session() as session:
         user = db.User(
@@ -89,6 +104,9 @@ async def github_auth_get_token(tg_chat_id, request):
         )
         session.add(user)
         session.commit()
+
+    logging.info(f'GH auth success, chat id {tg_chat_id}, access token {access_token}')
+    send_notification(tg_chat_id, 'Logged in successfully.')
 
 app = FastAPI()
 
