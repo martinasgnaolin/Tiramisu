@@ -3,8 +3,8 @@ import time
 import os
 
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import declarative_base, Session, relationship
 from sqlalchemy.exc import OperationalError
 
 DB_HOST = os.getenv('DB_HOST')
@@ -25,8 +25,24 @@ class User(Base):
     github_access_token = Column(String)
     notifications_enabled = Column(Boolean, nullable=False, default=True)
 
+    subscriptions = relationship("Subscription", cascade="all, delete")
+
     def __repr__(self):
         return f'User(id={self.id}, telegram_id={self.telegram_id}, notifications_enabled={self.notifications_enabled})'
+
+
+class Subscription(Base):
+    __tablename__ = 'Subscriptions'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+
+    owner = Column(String, nullable=False)
+    repo = Column(String, nullable=False)
+    pattern = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f'Subscription(id={self.id}, user_id={self.user_id}, owner={self.owner}, repo={self.repo}, pattern={self.pattern})'
 
 
 def init():
