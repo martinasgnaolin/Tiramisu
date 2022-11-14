@@ -53,6 +53,7 @@ def help_command(update, context):
         "- To get a list of your current subscriptions: /subscriptions \n"
     )
 
+
 #---------------------------------
 # Login and logout
 #---------------------------------
@@ -73,14 +74,31 @@ def login_command(update, context):
     if res['status'] == 'success':
         uri = res['verification_uri']
         code = res['user_code']
-        update.message.reply_text("Follow the link " + uri + " and insert the following code: " + code)
+        update.message.reply_text("Follow the link " + uri 
+                                  + " and insert the following code (tap to copy): " + code)
     
     if res['status'] == 'already_logged_in':
         update.message.reply_text("You are already logged in")
 
-
 def logout_command(update, context):
-    update.message.reply_text("Logout from your GitHub account (TODO)")
+    
+    res = requests.post(
+        'http://backend:8000/user/remove',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id
+        }
+    ).json()
+
+    if res['status'] == 'success':
+        update.message.reply_text("Successfully logged out")
+    
+    if res['status'] == 'authentication_failed':
+        update.message.reply_text("Log out failed: you are not logged in")
+
 
 #----------------------------------
 # Notifications enabling/disabling
@@ -100,6 +118,7 @@ def disable_command(update, context):
     else:
         update.message.reply_text("Some error occurred, please try again")
 
+
 #----------------------------------
 # Subscriptions handling
 #----------------------------------
@@ -113,6 +132,7 @@ def unsubscribe_command(update, context):
 def subscriptions_command(update, context):
     response = requests.get('http://backend:8000/subscription/list')
     # Here we'll iterate over the list in the response and return all elements
+
 
 #----------------------------------
 # Main
