@@ -132,6 +132,15 @@ def unsubscribe_command(update, context):
 
 def subscriptions_command(update, context):
     response = requests.get('http://backend:8000/subscription/list')
+    if response['status'] == 'success':
+        string = "These are your current subscriptions:\n"
+        for s in response['result']:
+            string += s['id']+':'+s['owner']+':'+s['repo']+':'+s['pattern']
+            string += "\n"
+        update.message.reply_text(string)
+    if response['status'] == 'authentication_failed':
+        update.message.reply_text('Authentication failed')
+
     # Here we'll iterate over the list in the response and return all elements
 
 
