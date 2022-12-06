@@ -41,6 +41,8 @@ class Subscription(Base):
     repo = Column(String, nullable=False)
     pattern = Column(String, nullable=False)
 
+    user = relationship('User')
+
     def __repr__(self):
         return f'Subscription(id={self.id}, user_id={self.user_id}, owner={self.owner}, repo={self.repo}, pattern={self.pattern})'
 

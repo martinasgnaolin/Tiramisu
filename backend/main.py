@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 STATUS_OK = 'success'
 STATUS_ALREADY_LOGGED_IN = 'already_logged_in'
 STATUS_AUTH_FAILED = 'authentication_failed'
+STATUS_FAILURE = 'fail'
 
 
 def send_notification(chat_id: str, message: str):
@@ -288,4 +289,19 @@ def api_subscription_delete(req: SubscriptionDeleteRequest):
 async def github_callback(req: Request):
     body = await req.json()
     logging.info(f'Got GH callback, {body}')
-    return {'no':'no'}
+
+    try:
+        repo_full_name: str = body['repository']['full_name']
+        repo_owner, repo_name = repo_full_name.split('/', 1)
+    except KeyError as e:
+        logging.info(f'KeyError in GH callback, {e}')
+        return {'status': STATUS_FAILURE}
+
+    with db.session() as session:
+        subs = session.query(db.Subscription).filter_by(owner = repo_owner, repo = repo_name).all()
+        logging.info(f'Subs: {subs}')
+
+        for sub in subs:
+            send_notification(sub.user.telegram_id, f'New commit on repo {repo_full_name}')
+
+    return {'status': STATUS_OK}
