@@ -124,9 +124,50 @@ def disable_command(update, context):
 # Subscriptions handling
 #----------------------------------
 
+OWNER, REPO, PATTERN, COMPLETE = range(4)
+
 def subscribe_command(update, context):
-    update.message.reply_text("Which subscription do you want to add?")
+    update.message.reply_text("Let's add a new subscription. Which is the owner?")
+    return OWNER
+
+def get_owner(update, context):
+    context.user_data['owner'] = update.message.text
+    update.message.reply_text("Which is the repo?")
+    return REPO
+
+def get_repo(update, context):
+    context.user_data['repo'] = update.message.text
+    update.message.reply_text("Which is the pattern?")
+    return PATTERN
+
+def get_pattern(update, context):
+    context.user_data['pattern'] = update.message.text
+
+    response = requests.post(
+        'http://backend:8000/subscription',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id,
+            'owner': context.user_data['owner'],
+            'repo': context.user_data['repo'],
+            'pattern': context.user_data['pattern']
+        }
+    ).json()
+
+    if response['status'] == 'success':
+        update.message.reply_text("Subscription successfully added")    
+    if response['status'] == 'authentication_failed':
+        update.message.reply_text("Authentication failed")
     
+    return ConversationHandler.END
+
+def cancel(update, context):
+    update.message.reply_text("Conversation concluded")
+    return ConversationHandler.END
+       
 def unsubscribe_command(update, context):
     update.message.reply_text("Which subscription do you want to remove?")
 
@@ -140,8 +181,6 @@ def subscriptions_command(update, context):
         update.message.reply_text(string)
     if response['status'] == 'authentication_failed':
         update.message.reply_text('Authentication failed')
-
-    # Here we'll iterate over the list in the response and return all elements
 
 
 #----------------------------------
@@ -162,8 +201,20 @@ def init_telegram_bot():
     dp.add_handler(CommandHandler("logout", logout_command))
     dp.add_handler(CommandHandler("enable", enable_command))
     dp.add_handler(CommandHandler("disable", disable_command))
-    dp.add_handler(CommandHandler("subscribe", subscribe_command))
-    dp.add_handler(CommandHandler("unsubscribe", unsubscribe_command))
+    #dp.add_handler(CommandHandler("subscribe", subscribe_command))
+    #dp.add_handler(CommandHandler("unsubscribe", unsubscribe_command))
     dp.add_handler(CommandHandler("subscriptions", subscriptions_command))
+
+    conversation_handler = ConversationHandler(
+        entry_points=[CommandHandler("subscribe", subscribe_command)],
+        states={
+            OWNER: [MessageHandler(Filters.text, get_owner)],
+            REPO: [MessageHandler(Filters.text, get_repo)],
+            PATTERN: [MessageHandler(Filters.text, get_pattern)]
+
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )    
+    dp.add_handler(conversation_handler)
 
     updater.start_polling(1)
