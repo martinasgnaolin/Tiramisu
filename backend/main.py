@@ -278,7 +278,7 @@ def api_subscription_delete(req: SubscriptionDeleteRequest):
     with db.session() as session:
         sub = session.query(db.Subscription).filter_by(user_id = user.id, id = req.sub_id).first()
         if sub:
-            sub.delete()
+            session.delete(sub)
 
         session.commit()
 
