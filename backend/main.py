@@ -227,7 +227,7 @@ def api_subscription(req: SubscriptionAddRequest):
     if not (user := get_authenticated_user(req.tg_chat_id)):
         return {'status': STATUS_AUTH_FAILED}
 
-    add_github_webhook(req.tg_chat_id, req.owner, req.repo)
+    add_github_webhook(user.github_access_token, req.owner, req.repo)
 
     with db.session() as session:
         last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()[0]
