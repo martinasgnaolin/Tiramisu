@@ -107,17 +107,17 @@ def logout_command(update, context):
 
 def enable_command(update, context):
     response = requests.get('http://backend:8000/notifications/enable')
-    if response.status_code == 200:
-        update.message.reply_text("Now the service is enabled")
-    else:
-        update.message.reply_text("Some error occurred, please try again")
+    if response['status'] == 'success':
+        update.message.reply_text("Now the service is enabled")    
+    if response['status'] == 'authentication_failed':
+        update.message.reply_text("Authentication failed")
 
 def disable_command(update, context):
     response = requests.get('http://backend:8000/notifications/disable')
-    if response.status_code == 200:
-        update.message.reply_text("Now the service is disabled")
-    else:
-        update.message.reply_text("Some error occurred, please try again")
+    if response['status'] == 'success':
+        update.message.reply_text("Now the service is disabled")    
+    if response['status'] == 'authentication_failed':
+        update.message.reply_text("Authentication failed")
 
 
 #----------------------------------
@@ -163,25 +163,57 @@ def get_pattern(update, context):
         update.message.reply_text("Authentication failed")
     
     return ConversationHandler.END
-
-def cancel(update, context):
-    update.message.reply_text("Conversation concluded")
-    return ConversationHandler.END
        
 def unsubscribe_command(update, context):
-    update.message.reply_text("Which subscription do you want to remove?")
+    subscriptions_command(update, context)
+    update.message.reply_text("Write the id of the subscription you'd like to delete")
+    return COMPLETE
+
+def complete_unsubscription(update, context):
+    sub_id = int(update.message.text)
+
+    response = requests.post(
+        'http://backend:8000/subscription/delete',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id,
+            'sub_id': sub_id
+        }
+    ).json()
+
+    if response['status'] == 'success':
+        update.message.reply_text("Subscription successfully deleted")    
+    if response['status'] == 'authentication_failed':
+        update.message.reply_text("Authentication failed")
+    
+    return ConversationHandler.END        
 
 def subscriptions_command(update, context):
-    response = requests.get('http://backend:8000/subscription/list')
+    response = requests.post(
+        'http://backend:8000/subscription/list',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id
+        }
+    ).json()
     if response['status'] == 'success':
         string = "These are your current subscriptions:\n"
         for s in response['result']:
-            string += s['id']+':'+s['owner']+':'+s['repo']+':'+s['pattern']
+            string += str(s['id'])+':'+s['owner']+':'+s['repo']+':'+s['pattern']
             string += "\n"
         update.message.reply_text(string)
     if response['status'] == 'authentication_failed':
         update.message.reply_text('Authentication failed')
 
+def cancel(update, context):
+    update.message.reply_text("Conversation concluded")
+    return ConversationHandler.END
 
 #----------------------------------
 # Main
@@ -201,20 +233,26 @@ def init_telegram_bot():
     dp.add_handler(CommandHandler("logout", logout_command))
     dp.add_handler(CommandHandler("enable", enable_command))
     dp.add_handler(CommandHandler("disable", disable_command))
-    #dp.add_handler(CommandHandler("subscribe", subscribe_command))
-    #dp.add_handler(CommandHandler("unsubscribe", unsubscribe_command))
     dp.add_handler(CommandHandler("subscriptions", subscriptions_command))
 
-    conversation_handler = ConversationHandler(
+    conversation_handler_sub = ConversationHandler(
         entry_points=[CommandHandler("subscribe", subscribe_command)],
         states={
             OWNER: [MessageHandler(Filters.text, get_owner)],
             REPO: [MessageHandler(Filters.text, get_repo)],
             PATTERN: [MessageHandler(Filters.text, get_pattern)]
-
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )    
-    dp.add_handler(conversation_handler)
+    dp.add_handler(conversation_handler_sub)
+    
+    conversation_handler_unsub = ConversationHandler(
+        entry_points=[CommandHandler("unsubscribe", unsubscribe_command)],
+        states={
+            COMPLETE: [MessageHandler(Filters.text, complete_unsubscription)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )    
+    dp.add_handler(conversation_handler_unsub)
 
     updater.start_polling(1)
