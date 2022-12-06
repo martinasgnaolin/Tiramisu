@@ -32,7 +32,7 @@ class User(Base):
 
 
 class Subscription(Base):
-    __tablename__ = 'Subscriptions'
+    __tablename__ = 'subscriptions'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)

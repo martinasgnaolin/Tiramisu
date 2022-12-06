@@ -2,7 +2,7 @@ import asyncio
 import sys
 import logging
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy.sql.expression import func
 
@@ -124,7 +124,7 @@ async def github_auth_get_token(tg_chat_id, request):
 
 
 def add_github_webhook(gh_token: str, owner: str, repo: str):
-    requests.post(
+    resp = requests.post(
         f'https://api.github.com/repos/{owner}/{repo}/hooks',
         headers = {
             'Authorization': f'Bearer {gh_token}',
@@ -132,7 +132,7 @@ def add_github_webhook(gh_token: str, owner: str, repo: str):
             'Accept': 'application/json'
         },
         json = {
-            'name': 'Tiramisu',
+            'name': 'web',
             'active': True,
             'events': ['push'],
             'config': {
@@ -142,6 +142,8 @@ def add_github_webhook(gh_token: str, owner: str, repo: str):
             }
         }
     )
+
+    logging.info(f'GH: {resp.status_code} - {resp.text}')
 
 
 app = FastAPI()
@@ -228,7 +230,7 @@ def api_subscription(req: SubscriptionAddRequest):
     add_github_webhook(req.tg_chat_id, req.owner, req.repo)
 
     with db.session() as session:
-        last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()
+        last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()[0]
         if not last_sub_id:
             last_sub_id = 0
 
@@ -283,5 +285,7 @@ def api_subscription_delete(req: SubscriptionDeleteRequest):
 
 
 @app.post('/github_callback')
-def github_callback():
+async def github_callback(req: Request):
+    body = await req.json()
+    logging.info(f'Got GH callback, {body}')
     return {'no':'no'}
