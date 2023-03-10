@@ -181,6 +181,8 @@ def get_pattern(update, context):
         update.message.reply_text("Subscription successfully added")    
     if response['status'] == 'authentication_failed':
         update.message.reply_text("Authentication failed")
+    if response['status'] == 'repository_not_found':
+        update.message.reply_text("Repository not found")
     
     return ConversationHandler.END
        

@@ -15,6 +15,7 @@ STATUS_OK = 'success'
 STATUS_ALREADY_LOGGED_IN = 'already_logged_in'
 STATUS_AUTH_FAILED = 'authentication_failed'
 STATUS_FAILURE = 'fail'
+STATUS_REPO_NOT_FOUND = 'repository_not_found'
 
 
 def send_notification(chat_id: str, message: str):
@@ -146,6 +147,7 @@ def add_github_webhook(gh_token: str, owner: str, repo: str):
 
     logging.info(f'GH: {resp.status_code} - {resp.text}')
 
+    return resp.status_code != 404
 
 app = FastAPI()
 
@@ -228,7 +230,8 @@ def api_subscription(req: SubscriptionAddRequest):
     if not (user := get_authenticated_user(req.tg_chat_id)):
         return {'status': STATUS_AUTH_FAILED}
 
-    add_github_webhook(user.github_access_token, req.owner, req.repo)
+    if not add_github_webhook(user.github_access_token, req.owner, req.repo):
+        return {'status': STATUS_REPO_NOT_FOUND}
 
     with db.session() as session:
         last_sub_id = session.query(func.max(db.Subscription.id)).filter_by(user_id = user.id).first()[0]
