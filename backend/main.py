@@ -1,3 +1,5 @@
+from typing import List
+
 import asyncio
 import sys
 import logging
@@ -5,6 +7,7 @@ import requests
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy.sql.expression import func
+from pathlib import PurePath
 
 import db
 import github_apikey
@@ -296,6 +299,8 @@ async def github_callback(req: Request):
     try:
         repo_full_name: str = body['repository']['full_name']
         repo_owner, repo_name = repo_full_name.split('/', 1)
+        pusher_name: str = body['pusher']['name']
+        modified_files: List[str] = body['head_commit']['added'] + body['head_commit']['removed'] + body['head_commit']['modified']
     except KeyError as e:
         logging.info(f'KeyError in GH callback, {e}')
         return {'status': STATUS_FAILURE}
@@ -305,6 +310,14 @@ async def github_callback(req: Request):
         logging.info(f'Subs: {subs}')
 
         for sub in subs:
-            send_notification(sub.user.telegram_id, f'New commit on repo {repo_full_name}')
+            match = False
+            for fname in modified_files:
+                if PurePath(fname).match(sub.pattern):
+                    logging.info(f'Pattern {sub.pattern} matched file {fname}')
+                    match = True
+                    break
+
+            if match:
+                send_notification(sub.user.telegram_id, f'New commit by {pusher_name} on repo {repo_full_name} matching pattern {sub.pattern}')
 
     return {'status': STATUS_OK}
