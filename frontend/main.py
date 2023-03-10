@@ -106,14 +106,34 @@ def logout_command(update, context):
 #----------------------------------
 
 def enable_command(update, context):
-    response = requests.get('http://backend:8000/notifications/enable')
+    response = requests.get(
+        'http://backend:8000/notifications/enable',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id
+        }
+    ).json()
+
     if response['status'] == 'success':
         update.message.reply_text("Now the service is enabled")    
     if response['status'] == 'authentication_failed':
         update.message.reply_text("Authentication failed")
 
 def disable_command(update, context):
-    response = requests.get('http://backend:8000/notifications/disable')
+    response = requests.get(
+        'http://backend:8000/notifications/disable',
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        json = {
+            'tg_chat_id': update.message.chat.id
+        }
+    ).json()
+
     if response['status'] == 'success':
         update.message.reply_text("Now the service is disabled")    
     if response['status'] == 'authentication_failed':
