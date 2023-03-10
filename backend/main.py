@@ -309,7 +309,12 @@ async def github_callback(req: Request):
         subs = session.query(db.Subscription).filter_by(owner = repo_owner, repo = repo_name).all()
         logging.info(f'Subs: {subs}')
 
+        sent = set()
+
         for sub in subs:
+            if sub.user.telegram_id in sent:
+                continue
+
             match = False
             for fname in modified_files:
                 if PurePath(fname).match(sub.pattern):
@@ -319,5 +324,6 @@ async def github_callback(req: Request):
 
             if match:
                 send_notification(sub.user.telegram_id, f'New commit by {pusher_name} on repo {repo_full_name} matching pattern {sub.pattern}')
+                sent.add(sub.user.telegram_id)
 
     return {'status': STATUS_OK}
