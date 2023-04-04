@@ -322,7 +322,7 @@ async def github_callback(req: Request):
                     match = True
                     break
 
-            if match:
+            if match and sub.user.notifications_enabled:
                 send_notification(sub.user.telegram_id, f'New commit by {pusher_name} on repo {repo_full_name} matching pattern {sub.pattern}')
                 sent.add(sub.user.telegram_id)
 
